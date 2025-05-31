@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vocab Trainer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    button { font-size: 24px; padding: 10px 20px; margin: 10px; }
+    #wordDisplay { font-size: 28px; margin-top: 20px; font-weight: bold; }
+    #meaningDisplay { font-size: 20px; margin-top: 10px; color: #444; }
+  </style>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h1><img src="https://i.postimg.cc/jqk7vdTN/logo.png" border="0" width="200" height="200"></h1>
+<h1>Vocab Trainer</h1>
+
+<p><font face="TH SarabunIT?">โปรแกรมฝึกคำศัพท์ <br>
+ระดับชั้นประถมศึกษาปีที่ 4-6</font><br>
+<button onclick="speakWord()"><font face="TH SarabunIT?">สุ่มคำ</font></button>
+<button onclick="repeatWord()"><font face="TH SarabunIT?">ฟังอีกครั้ง</font></button>
+</p>
+
+<div id="wordDisplay"></div>
+<div id="phoneticDisplay" style="font-size:22px; color:rgb(96,96,96); margin-top:10px;"></div>
+<div id="meaningDisplay"></div>
+
+<script>
+const words = [
+  { "word": "ability", "phonetic": "/əˈbɪləti/", "meaning": "ความสามารถ" },
+  { "word": "absence", "phonetic": "/ˈæbsəns/", "meaning": "การขาด" },
+  { "word": "abstract", "phonetic": "/ˈæbstrækt/", "meaning": "นามธรรม" },
+];
+
+let currentWord = "";
+let selectedVoice = null;
+
+// โหลดเสียงจากระบบ
+function loadVoices() {
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) {
+    setTimeout(loadVoices, 100);
+    return;
+  }
+
+  // เลือกเสียงที่เหมาะสม
+  selectedVoice = voices.find(v => v.name.includes("Google US English"))
+               || voices.find(v => v.lang.startsWith("en"));
+}
+
+// กระตุ้นให้ระบบอนุญาตเสียงเมื่อผู้ใช้แตะหน้าจอ (มือถือ)
+document.body.addEventListener('touchstart', () => {
+  const dummy = new SpeechSynthesisUtterance("Hi");
+  dummy.volume = 0; // ปิดเสียง
+  speechSynthesis.speak(dummy);
+}, { once: true });
+
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speakWord() {
+  const randomEntry = words[Math.floor(Math.random() * words.length)];
+  currentWord = randomEntry.word;
+
+  document.getElementById("wordDisplay").textContent = currentWord;
+  document.getElementById("phoneticDisplay").textContent = randomEntry.phonetic || "";
+  document.getElementById("meaningDisplay").textContent = randomEntry.meaning;
+
+  const utterance = new SpeechSynthesisUtterance(currentWord);
+  utterance.lang = 'en-US';
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+  utterance.rate = 0.9;
+  speechSynthesis.speak(utterance);
+}
+
+function repeatWord() {
+  if (currentWord) {
+    const utterance = new SpeechSynthesisUtterance(currentWord);
+    utterance.lang = 'en-US';
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+    utterance.rate = 0.9;
+    speechSynthesis.speak(utterance);
+  }
+}
+</script>
+
+<p><font face="TH SarabunIT?">เคล็ดลับการจำ </font><font face="TH SarabunIT?" color="#0070C0">การสะกดตัวอักษรในแต่ละคำ</font><font face="TH SarabunIT?"> : ฟังเสียงแล้วดูคำศัพท์ภาษาอังกฤษ จำทุกตัวอักษรของคำนั้น เขียนไว้ในกระดาษ (ห้ามดู)<br>
+เขียนเสร็จแล้วตรวจคำตอบ ถ้าผิด ให้กลับไปจำแล้วเขียนใส่กระดาษใหม่ ทำซ้ำๆจนกว่าจะจำได้ เมื่อจำได้แล้วค่อยเปลี่ยนคำศัพท์ใหม่<br>
+เคล็ดลับการจำ </font><font face="TH SarabunIT?" color="#0070C0">ความหมาย</font><font face="TH SarabunIT?"> : ฟังคำศัพท์แล้วอ่านความหมายในเวลาเดียวกัน</font></p>
+
+<p><font face="TH SarabunIT?">โดย ครูนิรุตต์ พวงเงิน</font></p>
+<p><img src="https://i.postimg.cc/bNtR4Fqm/gdkeepodld.jpg" border="0" width="58" height="58"><br>
+<font face="TH SarabunIT?">โรงเรียนบ้านโพธิ์สวัสดิ์<br>
+สำนักงานเขตพื้นที่การศึกษาประถมศึกษากำแพงเพชร เขต 1</font><br>&nbsp;</p>
+
+</body>
+</html>
