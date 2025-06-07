@@ -55,35 +55,42 @@ let selectedVoice = null;
 let spellingAnswer = "";
 let isSpeechInitialized = false;
 
-// โหลดเสียง
-function loadVoices() {
-  const voices = speechSynthesis.getVoices();
-  if (!voices.length) {
-    setTimeout(loadVoices, 100);
-    return;
+// โหลดเสียงอย่างปลอดภัย
+function loadVoices(callback) {
+  let voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    callback(voices);
+  } else {
+    speechSynthesis.onvoiceschanged = () => {
+      voices = speechSynthesis.getVoices();
+      callback(voices);
+    };
   }
-  selectedVoice = voices.find(v => v.name.includes("Google US English"))
-               || voices.find(v => v.lang.startsWith("en"));
 }
 
-speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
-
-// ปลุกระบบเสียง เมื่อคลิก "เริ่มใช้งาน"
+// พูดเสียงจริงเมื่อผู้ใช้กดเริ่มใช้งาน
 document.getElementById("startButton").addEventListener("click", () => {
-  const dummy = new SpeechSynthesisUtterance("start");
-  dummy.volume = 0;
-  speechSynthesis.speak(dummy);
-  isSpeechInitialized = true;
+  loadVoices((voices) => {
+    selectedVoice = voices.find(v => v.name.includes("Google US English"))
+                  || voices.find(v => v.lang.startsWith("en")) || voices[0];
 
-  // ซ่อนปุ่มเริ่ม และแสดงปุ่มควบคุมอื่น
-  document.getElementById("startButton").style.display = "none";
-  document.getElementById("controls").style.display = "block";
+    const test = new SpeechSynthesisUtterance("Ready");
+    test.voice = selectedVoice;
+    test.lang = "en-US";
+    test.rate = 1;
+    test.volume = 1;
+    test.onend = () => {
+      isSpeechInitialized = true;
+      document.getElementById("startButton").style.display = "none";
+      document.getElementById("controls").style.display = "block";
+    };
+    speechSynthesis.speak(test);
+  });
 });
 
 function speak(text) {
   if (!isSpeechInitialized) {
-    console.log("ยังไม่ได้เริ่มระบบเสียง");
+    alert("โปรดกดปุ่ม 'เริ่มใช้งาน' ก่อน");
     return;
   }
   const utterance = new SpeechSynthesisUtterance(text);
