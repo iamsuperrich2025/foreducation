@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spelling Bee Trainer - Teacher Niroot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 30px; }
+    button { font-size: 22px; padding: 10px 20px; margin: 10px; }
+    input[type="text"] { font-size: 22px; padding: 6px; width: 200px; margin-top: 10px; }
+    #wordDisplay { font-size: 28px; margin-top: 20px; font-weight: bold; }
+    #meaningDisplay { font-size: 20px; margin-top: 10px; color: #444; }
+    #spellingSection { margin-top: 30px; }
+    #feedback { font-size: 20px; margin-top: 10px; font-weight: bold; }
+  </style>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h1><img src="https://i.postimg.cc/jqk7vdTN/logo.png" border="0" width="200" height="200"></h1>
+<h1>Spelling Bee Trainer</h1>
+
+<!-- ปุ่มเริ่มใช้งาน -->
+<button id="startButton">เริ่มใช้งาน</button>
+
+<!-- ปุ่มฝึก -->
+<div id="controls" style="display:none;">
+  <p><font face="TH SarabunIT?">โปรแกรมฝึกคำศัพท์ ระดับ ป.4–6</font><br>
+  <button onclick="speakWord()">สุ่มคำ</button>
+  <button onclick="repeatWord()">ฟังอีกครั้ง</button>
+  <button onclick="startSpellingPractice()">ฝึกสะกดคำ</button>
+  </p>
+</div>
+
+<div id="wordDisplay"></div>
+<div id="phoneticDisplay" style="font-size:22px; color:rgb(96,96,96); margin-top:10px;"></div>
+<div id="meaningDisplay"></div>
+
+<div id="spellingSection" style="display:none;">
+  <p><strong>สะกดคำศัพท์ที่ได้ยิน:</strong></p>
+  <input type="text" id="spellingInput" placeholder="พิมพ์คำศัพท์ที่ได้ยิน">
+  <br>
+  <button onclick="checkSpelling()">ตรวจคำตอบ</button>
+  <div id="feedback"></div>
+</div>
+
+<script>
+const words = [
+  { "word": "ability", "phonetic": "/əˈbɪləti/", "meaning": "ความสามารถ" },
+  { "word": "your", "phonetic": "/jʊər/", "meaning": "ของคุณ" },
+  { "word": "zero", "phonetic": "/ˈzɪəroʊ/", "meaning": "ศูนย์" },
+];
+
+let currentWord = "";
+let selectedVoice = null;
+let spellingAnswer = "";
+let isSpeechInitialized = false;
+
+// โหลดเสียงอย่างปลอดภัย
+function loadVoices(callback) {
+  let voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    callback(voices);
+  } else {
+    speechSynthesis.onvoiceschanged = () => {
+      voices = speechSynthesis.getVoices();
+      callback(voices);
+    };
+  }
+}
+
+// พูดเสียงจริงเมื่อผู้ใช้กดเริ่มใช้งาน
+document.getElementById("startButton").addEventListener("click", () => {
+  loadVoices((voices) => {
+    selectedVoice = voices.find(v => v.name.includes("Google US English"))
+                  || voices.find(v => v.lang.startsWith("en")) || voices[0];
+
+    const test = new SpeechSynthesisUtterance("Ready");
+    test.voice = selectedVoice;
+    test.lang = "en-US";
+    test.rate = 1;
+    test.volume = 1;
+    test.onend = () => {
+      isSpeechInitialized = true;
+      document.getElementById("startButton").style.display = "none";
+      document.getElementById("controls").style.display = "block";
+    };
+    speechSynthesis.speak(test);
+  });
+});
+
+function speak(text) {
+  if (!isSpeechInitialized) {
+    alert("โปรดกดปุ่ม 'เริ่มใช้งาน' ก่อน");
+    return;
+  }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+  utterance.rate = 0.9;
+  speechSynthesis.speak(utterance);
+}
+
+function speakWord() {
+  const randomEntry = words[Math.floor(Math.random() * words.length)];
+  currentWord = randomEntry.word;
+
+  document.getElementById("wordDisplay").textContent = currentWord;
+  document.getElementById("phoneticDisplay").textContent = randomEntry.phonetic || "";
+  document.getElementById("meaningDisplay").textContent = randomEntry.meaning;
+  document.getElementById("spellingSection").style.display = "none";
+
+  speak(currentWord);
+}
+
+function repeatWord() {
+  if (currentWord) {
+    speak(currentWord);
+  }
+}
+
+function startSpellingPractice() {
+  const randomEntry = words[Math.floor(Math.random() * words.length)];
+  spellingAnswer = randomEntry.word;
+  currentWord = "";
+
+  document.getElementById("wordDisplay").textContent = "";
+  document.getElementById("phoneticDisplay").textContent = "";
+  document.getElementById("meaningDisplay").textContent = "";
+
+  document.getElementById("spellingInput").value = "";
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("spellingSection").style.display = "block";
+
+  const inputBox = document.getElementById("spellingInput");
+  inputBox.removeEventListener("keypress", handleEnter);
+  inputBox.addEventListener("keypress", handleEnter);
+
+  speak(spellingAnswer);
+}
+
+function handleEnter(event) {
+  if (event.key === "Enter") {
+    checkSpelling();
+  }
+}
+
+function checkSpelling() {
+  const userInput = document.getElementById("spellingInput").value.trim().toLowerCase();
+  if (userInput === spellingAnswer.toLowerCase()) {
+    document.getElementById("feedback").textContent = "✅ ถูกต้อง!";
+    document.getElementById("feedback").style.color = "green";
+  } else {
+    document.getElementById("feedback").textContent = "❌ ไม่ถูก ต้องสะกดว่า: " + spellingAnswer;
+    document.getElementById("feedback").style.color = "red";
+  }
+}
+</script>
+
+<p><font face="TH SarabunIT?">โดย ครูนิรุตต์ พวงเงิน</font></p>
+<p><img src="https://i.postimg.cc/bNtR4Fqm/gdkeepodld.jpg" border="0" width="58" height="58"><br>
+<font face="TH SarabunIT?">โรงเรียนบ้านโพธิ์สวัสดิ์<br>
+สำนักงานเขตพื้นที่การศึกษาประถมศึกษากำแพงเพชร เขต 1</font></p>
+
+</body>
+</html>
