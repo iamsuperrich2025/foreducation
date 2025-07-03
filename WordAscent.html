@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Word Ascent - พัฒนาศัพท์กับครูรุตต์</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 30px; }
+    button { font-size: 22px; padding: 10px 20px; margin: 10px; cursor: pointer; }
+    input[type="text"] { font-size: 22px; padding: 6px; width: 200px; margin-top: 10px; }
+    #feedback, #scoreDisplay, #timerDisplay { font-size: 20px; font-weight: bold; margin-top: 10px; }
+    #gameSection { margin-top: 30px; display: none; }
+    .correct { color: green; }
+    .incorrect { color: red; }
+    /* Style for player name input */
+    #playerNameInput { margin-bottom: 20px; }
+    #playerNameInput input { margin-left: 10px; }
+    
+    /* Styles for the results table */
+    #resultsSection { margin-top: 40px; display: none; } /* Initially hidden */
+    #resultsTableContainer { 
+        width: 95%; /* Adjust width as needed */
+        max-width: 1200px; /* Max width for large screens */
+        margin: 20px auto; 
+        overflow-x: auto; /* Enable horizontal scrolling for narrow screens */
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #resultsTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px; /* Smaller font for table to fit more columns */
+        min-width: 900px; /* Ensure table doesn't shrink too much */
+    }
+    #resultsTable th, #resultsTable td {
+        border: 1px solid #ddd;
+        padding: 8px 4px; /* Adjust padding to make columns narrower */
+        text-align: center;
+        white-space: nowrap; /* Prevent text wrapping in headers */
+    }
+    #resultsTable th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        padding: 8px 2px;
+        vertical-align: bottom; /* Align text at the bottom for rotated text */
+        height: 100px; /* Increased height for vertical text */
+    }
+    #resultsTable thead th:first-child {
+        height: auto; /* Reset height for the "ชื่อ" column */
+        vertical-align: middle;
+    }
+    #resultsTable tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    #resultsTable tbody td {
+        font-weight: normal;
+    }
+    #resultsTable .correct-mark { color: green; font-weight: bold; }
+    #resultsTable .incorrect-mark { color: red; font-weight: bold; }
+
+    /* For vertical text in table headers */
+    .vertical-text {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg); /* Rotate 180 degrees to read bottom-up */
+        white-space: nowrap;
+        text-align: left;
+        padding: 0 5px;
+    }
+
+    /* Style for result classification */
+    .excellent { color: #2196f3; font-weight: bold; } /* ดีเยี่ยม */
+    .good { color: #4caf50; font-weight: bold; }    /* ดี */
+    .medium { color: #ffeb3b; font-weight: bold; }    /* ปานกลาง */
+    .fair { color: #ff9800; font-weight: bold; }      /* พอใช้ */
+    .poor { color: #f44336; font-weight: bold; }      /* ควรปรับปรุง */
+
+    /* Custom styles for spacing adjustment */
+    .intro-text {
+        margin-bottom: 5px; /* ลดระยะห่างด้านล่างของข้อความแนะนำ */
+    }
+    .game-instruction {
+        margin-top: 5px; /* ลดระยะห่างด้านบนของข้อความคำสั่งในส่วนเกม */
+    }
+    /* ปรับ margin สำหรับปุ่ม เริ่มการทดสอบ เพื่อควบคุมระยะห่าง */
+    #startBtn {
+        margin-top: 10px; /* ปรับตามความเหมาะสม */
+        margin-bottom: 20px; /* ปรับตามความเหมาะสม */
+    }
+
+    /* God Mode specific styles */
+    #godModeDisplay {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #000;
+      z-index: 1000;
+      display: none; /* Hidden by default */
+    }
+
+    /* Style for the results header and button */
+    #resultsHeaderContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px; /* Space between heading and button */
+      margin-top: 40px; /* Adjust as needed */
+      margin-bottom: 20px; /* Space below the header container */
+    }
+    #resultsHeaderContainer h2 {
+      margin: 0; /* Remove default margin from h2 */
+    }
+
+    /* New styles for the main layout table */
+    .main-layout-table {
+        width: 100%;
+        border-collapse: collapse; /* Hides table borders */
+    }
+    .main-layout-table td {
+        border: none; /* Explicitly remove cell borders */
+        padding: 10px; /* Add some padding as needed */
+        vertical-align: middle; /* Align content to the middle vertically */
+        text-align: center; /* Center content horizontally within each cell */
+    }
+    .main-layout-table .left-column {
+        width: 550px; /* Adjust width for the image and its padding */
+    }
+    .main-layout-table .right-column {
+        /* No specific text-align needed here as it's set on .main-layout-table td */
+    }
+  </style>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<table class="main-layout-table">
+    <tr>
+        <td class="left-column">
+            <img src="https://iamsuperrich2025.github.io/foreducation/y-625.png" border="0" width="625" height="625">
+        </td>
+        <td class="right-column">
+            <h1>🎯 Word Ascent</h1>
+            <p class="intro-text"><font face="TH SarabunIT?">การพัฒนาสื่อแอปพลิเคชันเทคโนโลยีดิจิทัลแบบ Active Learning เพื่อพัฒนาคำศัพท์ภาษาอังกฤษระดับชั้นประถมศึกษาปีที่ 6 <br>
+            รายวิชาภาษาอังกฤษ บนระบบ OBEC Content Center ด้วยโปรแกรม Word Ascent เวอร์ชัน PC</font></p>
+            
+            <div id="playerNameInput">
+                <input type="text" id="playerName" placeholder="กรอกชื่อผู้ทดสอบ" autocomplete="off" />
+            </div>
+            <button id="startBtn">เริ่มการทดสอบและจับเวลา </button> ** อย่าลืมเปลี่ยนชื่อเมื่อเปลี่ยนผู้เข้ารับการทดสอบ **
+            <button id="godModeBtn">God Mode</button>
+
+            <div id="gameSection">
+                <p class="game-instruction"><strong>คำแนะนำ : ดูคำอ่านภาษาไทยและความหมาย แล้วพิมพ์คำศัพท์ภาษาอังกฤษ</strong></p>
+                <div id="timerDisplay">เวลา: 60 วินาที</div>
+                <div id="scoreDisplay">คะแนน: 0</div>
+                <div id="progressBar" style="width: 80%; margin: 20px auto; height: 30px; background-color: #ddd; border-radius: 10px; overflow: hidden; position: relative;">
+                    <div id="progress" style="height: 100%; width: 0%; background-color: #f44336;"></div>
+                    <div id="progressLabel" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; line-height: 30px; text-align: center; font-weight: bold; color: black;">ควรปรับปรุง</div>
+                </div>
+                <div id="wordInfo"></div>
+                <button id="speakWordBtn">🔊 ฟังคำศัพท์อีกครั้ง</button>
+                <br>
+                <input type="text" id="gameInput" placeholder="พิมพ์คำศัพท์" autocomplete="off" />
+                <br>
+                <button id="submitBtn">ส่งคำตอบ</button>
+                <div id="feedback"></div>
+                <p><button id="restartBtn">🔄 เล่นอีกครั้ง</button></p>
+            </div>
+
+            <div id="resultsSection">
+                <div id="resultsHeaderContainer">
+                    <h2>รายงานผลการทดสอบ</h2>
+                    <button id="exportExcelBtn">บันทึกคะแนนเพื่อเปิดใน Excel</button>
+                </div>
+                <div id="resultsTableContainer">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">ชื่อ</th>
+                                <th colspan="30" style="text-align: center;">ผลการตอบ</th> <th rowspan="2">คะแนน</th>
+                                <th rowspan="2">ระดับ</th>
+                            </tr>
+                            <tr>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="godModeDisplay"></div>
+
+            <p><font face="TH SarabunIT?">จัดทำโดย ครูนิรุตต์ พวงเงิน</font></p>
+            <p><img src="https://i.postimg.cc/bNtR4Fqm/gdkeepodld.jpg" border="0" width="58" height="58"><br>
+            <font face="TH SarabunIT?">โรงเรียนบ้านโพธิ์สวัสดิ์<br>
+            สำนักงานเขตพื้นที่การศึกษาประถมศึกษากำแพงเพชร เขต 1</font></p>
+
+            <audio id="backgroundMusic" loop>
+                <source src="https://iamsuperrich2025.github.io/foreducation/bgquietsound.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            <audio id="correctSound">
+                <source src="https://iamsuperrich2025.github.io/foreducation/correct.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            <audio id="incorrectSound">
+                <source src="https://iamsuperrich2025.github.io/foreducation/wrong.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </td>
+    </tr>
+</table>
+
+<script>
+const words = [
+  { "word": "achievement", "pronunciation": "อะ-ชีฟ-เมินทฺ", "meaning": "ความสำเร็จ" },
+  { "word": "bravery", "pronunciation": "เบรฟ-เวอ-รี่", "meaning": "ความกล้าหาญ" },
+  { "word": "culture", "pronunciation": "คัล-เชอร์", "meaning": "วัฒนธรรม" },
+  { "word": "democracy", "pronunciation": "ดี-ม็อค-คระ-ซี่", "meaning": "ประชาธิปไตย" },
+  { "word": "education", "pronunciation": "เอด-ดู-เค-ชั่น", "meaning": "การศึกษา" },
+  { "word": "freedom", "pronunciation": "ฟรี-ดอม", "meaning": "เสรีภาพ" },
+  { "word": "goal", "pronunciation": "โกล", "meaning": "เป้าหมาย" },
+  { "word": "honest", "pronunciation": "ออน-เนสทฺ", "meaning": "ซื่อสัตย์" },
+  { "word": "imagination", "pronunciation": "อิ-แม-จิ-เน-ชั่น", "meaning": "จินตนาการ" },
+  { "word": "justice", "pronunciation": "จัส-ทิส", "meaning": "ความยุติธรรม" },
+  { "word": "nation", "pronunciation": "เน-ชั่น", "meaning": "ชาติ" },
+  { "word": "responsibility", "pronunciation": "รี-สปอน-ซิ-บิ-ลิ-ที่", "meaning": "ความรับผิดชอบ" },
+  { "word": "liberty", "pronunciation": "ลิ-เบอ-ที่", "meaning": "อิสรภาพ" },
+  { "word": "honor", "pronunciation": "ออน-เนอร์", "meaning": "เกียรติยศ" },
+  { "word": "volunteer", "pronunciation": "วอล-ลัน-เทียร์", "meaning": "อาสาสมัคร" },
+  { "word": "peace", "pronunciation": "พีซ", "meaning": "สันติภาพ" },
+  { "word": "truth", "pronunciation": "ทรูธ", "meaning": "ความจริง" },
+  { "word": "effort", "pronunciation": "เอฟ-เฟิร์ท", "meaning": "ความพยายาม" },
+  { "word": "politeness", "pronunciation": "พอ-ไลทฺ-เนส", "meaning": "ความสุภาพ" },
+  { "word": "unity", "pronunciation": "ยู-นิ-ที่", "meaning": "ความสามัคคี" },
+  { "word": "equality", "pronunciation": "อี-ควอล-ลิ-ที่", "meaning": "ความเท่าเทียม" },
+  { "word": "integrity", "pronunciation": "อิน-เทก-ริ-ที่", "meaning": "ความซื่อสัตย์สุจริต" },
+  { "word": "generosity", "pronunciation": "เจน-เนอ-รอ-ซิ-ที่", "meaning": "ความเอื้อเฟื้อเผื่อแผ่" },
+  { "word": "patience", "pronunciation": "เพ-เชินซฺ", "meaning": "ความอดทน" },
+  { "word": "gratitude", "pronunciation": "แกรท-ทิ-ทูด", "meaning": "ความกตัญญู" },
+  { "word": "respect", "pronunciation": "รี-สเปคทฺ", "meaning": "ความเคารพ" },
+  { "word": "cooperation", "pronunciation": "โค-ออ-เพอะ-เร-ชั่น", "meaning": "ความร่วมมือ" },
+  { "word": "discipline", "pronunciation": "ดิส-ซิ-พลิน", "meaning": "วินัย" },
+  { "word": "confidence", "pronunciation": "คอน-ฟิ-เดินซฺ", "meaning": "ความมั่นใจ" },
+  { "word": "leadership", "pronunciation": "ลีด-เดอร์-ชิพ", "meaning": "ความเป็นผู้นำ" }
+];
+
+
+let selectedVoice = null;
+let isGameRunning = false;
+let currentWord = "";
+let currentPronunciation = "";
+let currentMeaning = "";
+let score = 0;
+let timeLeft = 0;
+let timer;
+let wordsUsed = []; // Stores words shown in the current game
+let currentAttemptResults = {}; // Stores correctness for each word in the current game
+const allGameResults = []; // Stores results from all games played
+let isGodModeActive = false; // New state variable for God Mode
+
+// DOM Elements
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+const submitBtn = document.getElementById("submitBtn");
+const gameInput = document.getElementById("gameInput");
+const gameSection = document.getElementById("gameSection");
+const feedback = document.getElementById("feedback");
+const scoreDisplay = document.getElementById("scoreDisplay");
+const timerDisplay = document.getElementById("timerDisplay");
+const wordInfo = document.getElementById("wordInfo");
+const speakWordBtn = document.getElementById("speakWordBtn");
+const playerNameInputDiv = document.getElementById("playerNameInput");
+const playerNameField = document.getElementById("playerName");
+const resultsSection = document.getElementById("resultsSection");
+const resultsTableBody = document.querySelector("#resultsTable tbody");
+const resultsTableHeaderRow2 = document.querySelector("#resultsTable thead tr:nth-child(2)");
+const resultsTableHeaderColspan = document.querySelector("#resultsTable thead th:nth-child(2)"); // The colspan cell
+
+// Audio elements
+const backgroundMusic = document.getElementById("backgroundMusic");
+const correctSound = document.getElementById("correctSound");
+const incorrectSound = document.getElementById("incorrectSound");
+
+const godModeBtn = document.getElementById("godModeBtn"); // God Mode button
+const godModeDisplay = document.getElementById("godModeDisplay"); // God Mode display element
+const exportExcelBtn = document.getElementById("exportExcelBtn"); // Export Excel button
+
+function loadVoices() {
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) {
+    setTimeout(loadVoices, 100);
+    return;
+  }
+  selectedVoice = voices.find(v => v.name.includes("Google US English")) || voices.find(v => v.lang.startsWith("en"));
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+// Pre-load a dummy utterance to activate speech synthesis on some mobile browsers
+// This is critical for getting audio to play on first user interaction,
+// especially on mobile browsers that block autoplay.
+document.body.addEventListener('touchstart', () => {
+  const dummy = new SpeechSynthesisUtterance("Hello");
+  dummy.volume = 0;
+  speechSynthesis.speak(dummy);
+  // Also attempt to play a silent background music to prime for later
+  backgroundMusic.volume = 0;
+  backgroundMusic.play().catch(e => console.log("Silent autoplay prevented:", e));
+  backgroundMusic.pause();
+  backgroundMusic.volume = 1; // Reset volume
+}, { once: true });
+
+
+function speak(text) {
+  speechSynthesis.cancel();  
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'en-US';  
+  if (selectedVoice) utter.voice = selectedVoice;  
+  utter.rate = 0.9;  
+  utter.volume = 1; // Explicitly set volume to 1 (maximum)
+  speechSynthesis.speak(utter);
+}
+
+function startGame() {
+  const playerName = playerNameField.value.trim();
+  if (playerName === "") {
+    feedback.textContent = "กรุณากรอกชื่อผู้ทดสอบ";
+    feedback.className = "incorrect";  
+    playerNameField.focus();
+    return;
+  }
+
+  isGameRunning = true;
+  playerNameInputDiv.style.display = "none";
+  startBtn.style.display = "none";
+  godModeBtn.style.display = "none"; // ซ่อนปุ่ม God Mode เมื่อเริ่มเกม
+  gameSection.style.display = "block";
+  resultsSection.style.display = "none";
+
+  feedback.textContent = "";
+  score = 0;
+  timeLeft = 0;
+  wordsUsed = [];
+  currentAttemptResults = {};
+
+  scoreDisplay.textContent = "คะแนน: 0";
+  timerDisplay.textContent = "เวลา: 0 วินาที";
+  gameInput.value = "";
+  gameInput.focus();
+  
+  if (isGodModeActive) { // แสดงเฉลยทันทีเมื่อเกมเริ่มถ้า God Mode เปิดอยู่
+    godModeDisplay.style.display = "block";
+  }
+
+  nextWord(); // เริ่มแสดงคำศัพท์แรก
+
+  // Play background music when the game starts
+  backgroundMusic.play().catch(e => console.log("Background music autoplay prevented:", e));
+
+  timer = setInterval(() => {
+    timeLeft++;
+    timerDisplay.textContent = "เวลา: " + timeLeft + " วินาที";
+    if (wordsUsed.length >= words.length) {  
+      clearInterval(timer);
+      endGame();
+    }
+  }, 1000);
+}
+
+function nextWord() {
+  const progressPercent = Math.min((wordsUsed.length / words.length) * 100, 100);  
+  document.getElementById("progress").style.width = progressPercent + "%";
+  const progressLabel = document.getElementById("progressLabel");
+  const progressBar = document.getElementById("progress");
+  
+  if (progressPercent <= 20) {
+    progressBar.style.backgroundColor = "#f44336";
+    progressLabel.textContent = ""; // เพิ่มข้อความสำหรับ ProgressBar
+  } else if (progressPercent <= 40) {
+    progressBar.style.backgroundColor = "#ff9800";
+    progressLabel.textContent = ""; // เพิ่มข้อความสำหรับ ProgressBar
+  } else if (progressPercent <= 60) {
+    progressBar.style.backgroundColor = "#ffeb3b";
+    progressLabel.textContent = ""; // เพิ่มข้อความสำหรับ ProgressBar
+  } else if (progressPercent <= 80) {
+    progressBar.style.backgroundColor = "#4caf50";
+    progressLabel.textContent = ""; // เพิ่มข้อความสำหรับ ProgressBar
+  } else {
+    progressBar.style.backgroundColor = "#2196f3";
+    progressLabel.textContent = ""; // เพิ่มข้อความสำหรับ ProgressBar
+  }
+
+  if (wordsUsed.length >= words.length) {
+    endGame();
+    return;
+  }
+
+  const remaining = words.filter(w => !wordsUsed.includes(w.word));
+  const entry = remaining[Math.floor(Math.random() * remaining.length)];
+  currentWord = entry.word;
+  currentPronunciation = entry.pronunciation;
+  currentMeaning = entry.meaning;
+  wordsUsed.push(currentWord);
+
+  if (!(currentWord in currentAttemptResults)) {
+      currentAttemptResults[currentWord] = false;  
+  }
+
+  const letterPronunciationMap = {
+    a: "เอ", b: "บี", c: "ซี", d: "ดี", e: "อี",
+    f: "เอฟ", g: "จี", h: "เฮช", i: "ไอ", j: "เจ",
+    k: "เค", l: "แอล", m: "เอ็ม", n: "เอ็น", o: "โอ",
+    p: "พี", q: "คิว", r: "อาร์", s: "เอส", t: "ที",
+    u: "ยู", v: "วี", w: "ดับเบิลยู", x: "เอ็กซ์", y: "วาย", z: "แซด"
+  };
+  const spelledThai = currentWord.toLowerCase().split('').map(ch => letterPronunciationMap[ch] || ch).join('-');
+  wordInfo.innerHTML = `
+    <p>สะกดทีละตัว (เสียงไทย): <strong>${spelledThai}</strong></p>
+    <p>คำอ่าน: <strong>${currentPronunciation}</strong></p>
+    <p>ความหมาย: <strong>${currentMeaning}</strong></p>
+  `;
+  
+  speak(currentWord);
+
+  // Update God Mode display
+  if (isGodModeActive) {
+    godModeDisplay.textContent = currentWord;
+    godModeDisplay.style.display = "block"; // ตรวจสอบให้แน่ใจว่าแสดงอยู่
+  } else {
+    godModeDisplay.textContent = "";  
+    godModeDisplay.style.display = "none"; // ซ่อนเมื่อ God Mode ปิด
+  }
+
+  gameInput.value = "";
+  gameInput.focus();
+}
+
+function submitAnswer() {
+  if (!isGameRunning) return;
+  const input = gameInput.value.trim().toLowerCase();
+  
+  if (input === currentWord.toLowerCase()) {
+    score++;
+    feedback.textContent = "✅ ถูกต้อง!";
+    feedback.className = "correct";
+    currentAttemptResults[currentWord] = true;
+    correctSound.play(); // Play correct sound
+  } else {
+    feedback.textContent = "❌ คำที่ถูกต้องคือ: " + currentWord;
+    feedback.className = "incorrect";
+    currentAttemptResults[currentWord] = false;
+    incorrectSound.play(); // Play incorrect sound
+  }
+  scoreDisplay.textContent = "คะแนน: " + score;
+  nextWord();
+}
+
+function getLevelTextAndClass(finalScore) {
+  let resultText = "";
+  let resultClass = "";
+
+  if (finalScore >= 27) {
+    resultText = "ดีเยี่ยม";
+    resultClass = "excellent";
+  } else if (finalScore >= 23) {
+    resultText = "ดี";
+    resultClass = "good";
+  } else if (finalScore >= 19) {
+    resultText = "ปานกลาง";
+    resultClass = "medium";
+  } else if (finalScore >= 15) {
+    resultText = "พอใช้";
+    resultClass = "fair";
+  } else {
+    resultText = "ควรปรับปรุง";
+    resultClass = "poor";
+  }
+  return { text: resultText, className: resultClass };
+}
+
+function endGame() {
+  isGameRunning = false;
+  clearInterval(timer);
+  
+  backgroundMusic.pause(); // Pause background music when the game ends
+  backgroundMusic.currentTime = 0; // Reset music to the beginning for next play
+
+  const { text: levelText, className: levelClass } = getLevelTextAndClass(score);
+
+  feedback.innerHTML = `🏁 จบการทดสอบ! ได้คะแนน <strong>${score}</strong> จาก ${words.length} คำ ใช้เวลา <strong>${timeLeft}</strong> วินาที<br><span class="${levelClass}">ผลลัพธ์: ${levelText}</span>`;
+  feedback.className = "";  
+
+  const playerResult = {
+      name: playerNameField.value.trim() === "" ? "ผู้เล่นไม่ระบุชื่อ" : playerNameField.value.trim(),
+      score: score,
+      level: levelText,
+      wordResults: {}
+  };
+
+  words.forEach(wordObj => {
+      playerResult.wordResults[wordObj.word] = currentAttemptResults[wordObj.word] !== undefined ? currentAttemptResults[wordObj.word] : false;
+  });
+
+  allGameResults.push(playerResult);
+
+  gameSection.style.display = "none";
+  resultsSection.style.display = "block";
+  playerNameInputDiv.style.display = "block";
+  startBtn.style.display = "block";
+  godModeBtn.style.display = "block"; // แสดงปุ่ม God Mode อีกครั้ง
+  godModeDisplay.style.display = "none"; // ซ่อน God Mode display เมื่อจบเกม
+
+  updateResultsTable();
+}
+
+function updateResultsTable() {
+    resultsTableBody.innerHTML = '';
+    
+    if (resultsTableHeaderRow2.children.length === 0 || resultsTableHeaderColspan.getAttribute("colspan") !== words.length.toString()) {  
+      resultsTableHeaderRow2.innerHTML = '';  
+
+      words.forEach(wordObj => {
+          const th = document.createElement("th");
+          const div = document.createElement("div");
+          div.className = "vertical-text";
+          div.textContent = wordObj.word;
+          th.appendChild(div);
+          resultsTableHeaderRow2.appendChild(th);
+      });
+      resultsTableHeaderColspan.setAttribute("colspan", words.length);
+    }
+
+    allGameResults.forEach(result => {
+        const row = resultsTableBody.insertRow();
+        const nameCell = row.insertCell();
+        nameCell.textContent = result.name;
+
+        words.forEach(wordObj => {
+            const cell = row.insertCell();
+            const isCorrect = result.wordResults[wordObj.word];
+            if (isCorrect) {
+                cell.textContent = "✓";
+                cell.className = "correct-mark";
+            } else {
+                cell.textContent = "✗";
+                cell.className = "incorrect-mark";
+            }
+        });
+
+        const scoreCell = row.insertCell();
+        scoreCell.textContent = result.score;
+        
+        const levelCell = row.insertCell();
+        levelCell.textContent = result.level;
+        levelCell.className = getLevelTextAndClass(result.score).className;
+    });
+}
+
+function toggleGodMode() {
+  isGodModeActive = !isGodModeActive; // สลับสถานะ God Mode
+  if (isGodModeActive) {
+    godModeBtn.textContent = "God Mode: เปิด";
+    if (isGameRunning) { // ถ้าเกมกำลังทำงานอยู่ ให้แสดงคำศัพท์ปัจจุบัน
+      godModeDisplay.textContent = currentWord;
+      godModeDisplay.style.display = "block";
+    }
+  } else {
+    godModeBtn.textContent = "God Mode: ปิด";
+    godModeDisplay.style.display = "none"; // ซ่อนเมื่อ God Mode ปิด
+    godModeDisplay.textContent = ""; // ล้างข้อความเมื่อปิด God Mode
+  }
+}
+
+function exportToExcel() {
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM for proper Thai character display in Excel
+
+    // Create header row for CSV
+    let header = ["ชื่อ"];
+    words.forEach(wordObj => {
+        header.push(wordObj.word); // Each word as a header
+    });
+    header.push("คะแนน");
+    header.push("ระดับ");
+    csvContent += header.join(",") + "\r\n";
+
+    // Add data rows
+    allGameResults.forEach(result => {
+        let row = [];
+        row.push(`"${result.name}"`); // Enclose name in quotes to handle commas
+        words.forEach(wordObj => {
+            const isCorrect = result.wordResults[wordObj.word];
+            row.push(isCorrect ? "✓" : "✗");
+        });
+        row.push(result.score);
+        row.push(`"${result.level}"`); // Enclose level in quotes
+        csvContent += row.join(",") + "\r\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "WordAscent_Results.csv");
+    document.body.appendChild(link); // Required for Firefox
+    link.click();
+    document.body.removeChild(link); // Clean up
+}
+
+
+document.addEventListener("DOMContentLoaded", function() {
+  gameSection.style.display = "none";
+  resultsSection.style.display = "none";
+  godModeDisplay.style.display = "none"; // ซ่อน God Mode display เริ่มต้น
+
+  startBtn.addEventListener("click", startGame);
+  restartBtn.addEventListener("click", startGame);
+  submitBtn.addEventListener("click", submitAnswer);
+  godModeBtn.addEventListener("click", toggleGodMode);
+  
+  // Add Event Listener for the new export button
+  const exportExcelBtn = document.getElementById("exportExcelBtn");
+  if (exportExcelBtn) {
+      exportExcelBtn.addEventListener("click", exportToExcel);
+  }
+
+  speakWordBtn.addEventListener("click", () => {
+    if (isGameRunning && currentWord) {
+      speak(currentWord);
+    }
+  });
+
+  gameInput.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") submitAnswer();
+  });
+
+  playerNameField.focus();
+});
+</script>
+
+</body>
+</html>
